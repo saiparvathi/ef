@@ -34,6 +34,8 @@ Auther: Chenxing Ouyang <c2ouyang@ucsd.edu>
 
 """
 
+import datetime
+import paho.mqtt.client as mqtt
 import cv2
 import os
 import numpy as np
@@ -46,6 +48,15 @@ import sys
 import logging
 import warnings
 
+def on_disconnect(client, userdata, rc):
+    if rc != 0:
+        print("unexpected disconnection.")
+    mqtt.reconnect()
+
+mqttc = mqtt.Client()
+mqttc.username_pw_set("Yant", password="yolo1234")
+mqttc.on_disconnect=on_disconnect
+mqttc.connect("anttgrid.com",1883)
 
 print(__doc__)
 
@@ -157,6 +168,9 @@ while ret:
                     face_to_predict = cv2.cvtColor(face_to_predict, cv2.COLOR_BGR2GRAY)
 		    name_to_display = svm.predict(clf, pca, face_to_predict, face_profile_names)
 		    print(name_to_display)
+		    currentDT=datetime.datetime.now()
+		    name = "{\"name\":\""+name_to_display +"\","+"\"timestamp\":\""+str(currentDT)+"\","+"\"employee_id\":\"007\"}"
+		    mqttc.publish("eyegrid/rpi0001",name)
                     # Display frame
                     cv2.rectangle(rotated_frame, (x,y), (x+w,y+h), (0,255,0))
                     cv2.putText(rotated_frame, name_to_display, (x,y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,255,0))
